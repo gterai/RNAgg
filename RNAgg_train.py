@@ -4,7 +4,7 @@ import argparse
 import copy
 import numpy as np
 import RNAgg_VAE
-import SS2shape2
+import SS2shape3
 import matplotlib.pyplot as plt
 #import seaborn as sns
 
@@ -169,9 +169,9 @@ def main(args: dict):
         ss  += '.' * dif
         
         #ここでtreeを作成する
-        bp = SS2shape2.getBPpos_ij(ss)
+        bp = SS2shape3.getBPpos_ij(ss)
         r = []
-        SS2shape2.generate_rule_G4b(0, r, seq.lower(), ss, bp, (0,len(ss)-1), 'S') ## ssも入れることにする。その方がわかりやすい
+        SS2shape3.generate_rule_G4b(0, r, seq.lower(), ss, bp, (0,len(ss)-1), 'S') ## ssも入れることにする。その方がわかりやすい
 
         #print(r)
         #exit(0)

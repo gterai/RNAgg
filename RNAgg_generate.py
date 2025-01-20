@@ -11,7 +11,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import RNAgg_VAE
-import SS2shape2
+import SS2shape3
 #import graphviz
 from torch.utils.data import DataLoader
 #from collections import defaultdict
@@ -47,7 +47,8 @@ def main(args: dict):
     print(device, file=sys.stderr)
     
     # モデルの初期化とロード
-    checkpoint = torch.load(args.model, weights_only=True)
+    #checkpoint = torch.load(args.model, weights_only=True)
+    checkpoint = torch.load(args.model)
     d_rep, max_len = checkpoint['d_rep'], checkpoint['max_len']
     if args.nuc_only:
         model = RNAgg_VAE.MLP_VAE(max_len * word_size, max_len * word_size, d_rep, device=device).to(device) 
