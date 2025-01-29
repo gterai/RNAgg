@@ -11,7 +11,8 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import RNAgg_VAE
-import SS2shape3
+import utils
+#import SS2shape3
 #import graphviz
 from torch.utils.data import DataLoader
 #from collections import defaultdict
@@ -25,23 +26,25 @@ from joblib import Parallel, delayed
 torch.set_grad_enabled(False) # generationの時はgradientの計算は行わない。
 
 NUC_LETTERS = list('ACGU-x')
-SS_LETTERS = list('.()')
+#SS_LETTERS = list('.()')
 #S_BAT = 10
 #MAX_LEN=93
 
 G_DIM=11
 
-def get_token2idx():
-    d = {}
-    for i,x in enumerate(NUC_LETTERS):
-        d[x] = i
-    return d
+#def get_token2idx():
+#    d = {}
+#    for i,x in enumerate(NUC_LETTERS):
+#        d[x] = i
+#    return d
 
 def main(args: dict):
     
-    token2idx = get_token2idx()
+    token2idx = utils.get_token2idx(NUC_LETTERS)
     idx2token = dict([y,x] for x,y in token2idx.items())
     word_size = len(NUC_LETTERS)
+    #print(word_size)
+    #exit(0)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device, file=sys.stderr)
@@ -49,11 +52,22 @@ def main(args: dict):
     # モデルの初期化とロード
     #checkpoint = torch.load(args.model, weights_only=True)
     checkpoint = torch.load(args.model)
-    d_rep, max_len = checkpoint['d_rep'], checkpoint['max_len']
-    if args.nuc_only:
-        model = RNAgg_VAE.MLP_VAE(max_len * word_size, max_len * word_size, d_rep, device=device).to(device) 
+    #d_rep, max_len = checkpoint['d_rep'], checkpoint['max_len']
+    d_rep, max_len, model_type, nuc_only = checkpoint['d_rep'], checkpoint['max_len'], checkpoint['type'], checkpoint['nuc_only']
+    print(f"model type:", model_type, file=sys.stderr)
+    print(f"nuc_only:", nuc_only, file=sys.stderr)
+
+    if model_type == 'act':
+        if nuc_only == 'yes':
+            model = RNAgg_VAE.MLP_VAE_REGRE(max_len*(word_size), max_len*(word_size), d_rep, device=device).to(device) 
+        else:
+            model = RNAgg_VAE.MLP_VAE_REGRE(max_len*(word_size+G_DIM), max_len*(word_size+G_DIM), d_rep, device=device).to(device)     
     else:
-        model = RNAgg_VAE.MLP_VAE(max_len * (word_size+G_DIM), max_len * (word_size+G_DIM), d_rep, device=device).to(device) 
+        if nuc_only == 'yes':
+            model = RNAgg_VAE.MLP_VAE(max_len*(word_size), max_len*(word_size), d_rep, device=device).to(device) 
+        else:
+            model = RNAgg_VAE.MLP_VAE(max_len*(word_size+G_DIM), max_len*(word_size+G_DIM), d_rep, device=device).to(device) 
+    
     model.load_state_dict(checkpoint['model_state_dict'])
     model.to(device)
     model.eval()
@@ -66,7 +80,7 @@ def main(args: dict):
     
     Sigmoid = nn.Sigmoid()
     Softmax = nn.Softmax(dim=2)
-    if args.nuc_only:
+    if nuc_only == 'yes':
         yy = y.view(s_z[0], max_len, word_size)
         yy = Softmax(yy) 
     else:
@@ -78,12 +92,13 @@ def main(args: dict):
         #exit(0)
         yy[:,:,:6] = Softmax(yy[:,:,:6])  # nucleotideの部分は、Softmaxをとる
         yy[:,:,6:] = Sigmoid(yy[:,:,6:])  # grammarの部分は、Sigmoidをとる
-
-    if args.nuc_only:
+ 
+    gen_seq_list  = []
+    gen_score_list = []
+    gen_ss_list = []
+    if nuc_only == 'yes':
         max_p, max_idx   = torch.max(yy, dim=2)
 
-        gen_seq_list  = []
-        gen_score_list = []
         max_logP = torch.log(max_p)
         for i in range(len(max_idx)):
             logP = torch.sum(max_logP[i])
@@ -91,16 +106,9 @@ def main(args: dict):
             print(i, logP.item(), nuc_seq)
             gen_seq_list.append(trimX(nuc_seq))
             gen_score_list.append(logP.item())
-
-        if args.out_fasta:
-            fout = open(args.out_fasta, 'w')
-
-            for i in range(len(gen_seq_list)):
-                print (f">gen{i} {gen_score_list[i]}", file=fout)
-                out_seq = gen_seq_list[i].replace('-', '')
-                print (out_seq,              file=fout)
-            fout.close()
-    else:
+            gen_ss_list.append('') # 空文字を入れる
+            
+    else: # RNAggモデル
         s = yy.shape
         #print(s)
         #print(type(yy))
@@ -112,24 +120,31 @@ def main(args: dict):
             yy_batch = yy[i:i + args.s_bat] # スライスの終わりがyyのサイズを超えても、yyの最大サイズになる。
             #print(yy_batch.shape)
             
-            seq_list, ss_list, score_list = generateRNA(yy_batch, None, device, None, None, token2idx, idx2token, args)
+            seq_list, ss_list, score_list = generateRNA(yy_batch, idx2token, args)
+            #generateRNA(yy_batch, None, device, None, None, token2idx, idx2token, args)
 
             gen_seq_list += seq_list
             gen_ss_list += ss_list
             gen_score_list += score_list
+            
+    # 最終出力
+    fout = open(args.outfile, 'w')
+    if args.out_fasta: # fastaフォーマット
+        for i in range(len(gen_seq_list)): 
+            #print (f">gen{i} {gen_score_list[i]}", file=fout)
+            print (f">gen{i}", file=fout)
+            out_seq = gen_seq_list[i].replace('-', '')
+            print (out_seq, file=fout)
+    else: # デフォルトの出力
+        for i in range(len(gen_seq_list)): 
+            out_seq = gen_seq_list[i].replace('-', '')
+            out_ss  = gen_ss_list[i].replace('-', '')
+            print (f"gen{i}", out_seq, out_ss, file=fout) # 2次構造は出力しない
+    fout.close()
+    
 
-
-        if args.out_fasta:
-            fout = open(args.out_fasta, 'w')
-        
-            for i in range(len(gen_seq_list)):
-                print (f">gen{i} {gen_score_list[i]}", file=fout)
-                out_seq = gen_seq_list[i].replace('-', '')
-                print (out_seq, file=fout)
-            fout.close()
-
-
-def generateOneSeq(n, pssm_batch_log, StoS, StoT, TtoT, TtoU, TtoTU, pair_numera, sid2seq, sid2ss, idx2token):
+#def generateOneSeq(n, pssm_batch_log, StoS, StoT, TtoT, TtoU, TtoTU, pair_numera, sid2seq, sid2ss, idx2token):
+def generateOneSeq(n, pssm_batch_log, StoS, StoT, TtoT, TtoU, TtoTU, pair_numera, idx2token):
     s = pssm_batch_log.shape
     p_type2pair = {1:'AU',2:'UA',3:'GC',4:'CG',5:'GU',6:'UG'}
     
@@ -149,8 +164,8 @@ def generateOneSeq(n, pssm_batch_log, StoS, StoT, TtoT, TtoU, TtoTU, pair_numera
     pssm_log = pssm_batch_log[n]
     
     k_set = set() # bifucationの可能性が1e-5のポジションのみを考える。
-    for k in range(len(pssm_log[:,12])):
-        if pssm_log[k,12] >= np.log(1e-5):
+    for k in range(len(pssm_log[:,16])):
+        if pssm_log[k,16] >= np.log(1e-5):
             k_set.add(k)
             
     S = np.full((s[1],s[1]), np.nan) # L x Lの行列
@@ -264,7 +279,8 @@ def generateOneSeq(n, pssm_batch_log, StoS, StoT, TtoT, TtoU, TtoTU, pair_numera
     print("score=", gen_score, file=sys.stderr)
     return gen_seq, gen_ss, gen_score
     
-def generateRNA(pssm_batch, sid_list, device, sid2seq, sid2ss, token2idx, idx2token, args):
+#def generateRNA(pssm_batch, sid_list, device, sid2seq, sid2ss, token2idx, idx2token, args):
+def generateRNA(pssm_batch, idx2token, args):
 
     pssm_batch = torch.clip(pssm_batch, min=1e-10, max=1)
     pssm_batch_log = torch.log(pssm_batch)
@@ -330,11 +346,15 @@ def generateRNA(pssm_batch, sid_list, device, sid2seq, sid2ss, token2idx, idx2to
     
     s = pssm_batch_log.shape # numpyにしておく。
     
-    tasks = [delayed(generateOneSeq)(n, pssm_batch_log, StoS, StoT, TtoT, TtoU, TtoTU, pair_numera, sid2seq, sid2ss, idx2token) for n in range(s[0])]
+    #tasks = [delayed(generateOneSeq)(n, pssm_batch_log, StoS, StoT, TtoT, TtoU, TtoTU, pair_numera, sid2seq, sid2ss, idx2token) for n in range(s[0])]
+    tasks = [delayed(generateOneSeq)(n, pssm_batch_log, StoS, StoT, TtoT, TtoU, TtoTU, pair_numera, idx2token) for n in range(s[0])]
 
     results = Parallel(n_jobs=args.n_cpu)(tasks)
-    gen_seq_list   = [trimX(x[0]) for x in results]
-    gen_ss_list    = [x[1] for x in results]
+    #gen_seq_list   = [trimX(x[0]) for x in results]
+    #gen_ss_list    = [x[1] for x in results]
+    tmp_list = [(trimX_SS(x[0], x[1])) for x in results] # 2時構造もトリムする。
+    gen_seq_list   = [x[0] for x in tmp_list]
+    gen_ss_list    = [x[1] for x in tmp_list]
     gen_score_list = [x[2] for x in results]
 
     # calc pair frequency
@@ -386,7 +406,19 @@ def trimX(seq:str):
         else:
             s = s + n
     return s
-        
+
+def trimX_SS(seq:str, sec:str):
+    s = ''
+    ss = ''
+    for n, c in zip(seq, sec):
+        if n == 'x':
+            break
+        else:
+            s = s + n
+            ss = ss + c
+    return s, ss
+
+
 def TraceBack(st_ini, pos_ini, TR, TB, seq, ss):
     ST2IDX = {'S':0, 'T':1, 'U':2}
     IDX2ST = {0:'S', 1:'T', 2:'U'}
@@ -482,16 +514,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('n', type=int, help='number of RNA to be produced')
     parser.add_argument('model', help='trained VAE model')
+    parser.add_argument('outfile', help='output file namel')
     parser.add_argument('--input', help='input data file')
     parser.add_argument('--s_bat', type=int, default=100, help='batch size')    
-    #parser.add_argument('--d_rep', help='the number of dimensions in the latent space', type=int, default=8)
-    #parser.add_argument('--mode', default='random', help='generation algorithm')
     parser.add_argument('--matout', help='matrix output directory')
     parser.add_argument('--outProb', action='store_true', help='output TtoU probability matrix')
-    parser.add_argument('--out_fasta', help='output fasta file')
-    parser.add_argument('--nuc_only', action='store_true', help='nucleotide only training')
+    parser.add_argument('--out_fasta', action='store_true', help='output fasta file')
+    #parser.add_argument('--nuc_only', action='store_true', help='nucleotide only training')
     parser.add_argument('--n_cpu', type=int, default=1, help='number of CPU to use')
     args = parser.parse_args()
 
     main(args)
 
+    
