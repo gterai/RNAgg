@@ -6,7 +6,7 @@ import numpy as np
 import RNAgg_VAE
 import SS2shape3
 import matplotlib.pyplot as plt
-import utils
+import utils_gg as utils
 import Binary_matrix
 
 from torch.utils.data import DataLoader
@@ -33,7 +33,7 @@ def main(args: dict):
     
     sid2seq, sid2ss  = utils.readInput(args.input)
     max_len = max([len(x) for x in sid2seq.values()])
-    print(f"Maximul_length={max_len}")
+    print(f"Maximam_length={max_len}")
     
     sid_list = list(sid2seq.keys())
     word_size = len(NUC_LETTERS)  # 塩基の種類
@@ -61,7 +61,7 @@ def main(args: dict):
     train_dataloader = DataLoader(d, batch_size=args.s_bat, shuffle=True)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(device, file=sys.stderr)
+    print(f"device={device}", file=sys.stderr)
 
     if args.act_fname == None: # activity fileが指定されていない -> org model
         if args.nuc_only:
@@ -105,12 +105,15 @@ def main(args: dict):
         L1_mean = 0.
         L2_mean = 0.
         L3_mean = 0.
-        CEloss = nn.CrossEntropyLoss()
+        CEloss = nn.CrossEntropyLoss(reduction="none")
+        #CEloss_mean = nn.CrossEntropyLoss()
         sigmoid = nn.Sigmoid()
-        BCEloss = nn.BCELoss()
+        BCEloss = nn.BCELoss(reduction="none")
+        #BCEloss_mean = nn.BCELoss()
         MSEloss = nn.MSELoss()
         for x, t, v in train_dataloader:
             s = x.shape
+            bs, L = s[0], s[1]
             #x = x.view(s[0], max_len*(word_size+7)) # ここで一列にする。CNNにするなら、一列にしない。RNAVAE.py側で吸収した方が良い。
             #s = x.shape
             x = x.to(device)
@@ -129,13 +132,19 @@ def main(args: dict):
 
             if args.nuc_only: # nucleotide only model
                 yy = y.view(s[0], max_len, word_size)
-                L1 = CEloss(torch.transpose(yy,1,2), torch.transpose(x,1,2))
+                L1 = torch.mean(torch.sum(CEloss(torch.transpose(yy,1,2), torch.transpose(x,1,2)), dim=1)/L) # logなので、確率の掛け算はsumになる。RNAの長さで割っておく。
             else:
                 yy = y.view(s[0], max_len, word_size+G_DIM)
-                L1_nuc = CEloss(torch.transpose(yy[:,:,:6],1,2), torch.transpose(x[:,:,:6],1,2))
-                L1_ss = BCEloss(sigmoid(yy[:,:,6:]), x[:,:,6:]) 
-                L1 = L1_nuc + L1_ss
-            
+                L1_nuc_sum = torch.sum(CEloss(torch.transpose(yy[:,:,:6],1,2), torch.transpose(x[:,:,:6],1,2)), dim=1)/L  # logなので、確率の掛け算はsumになる。RNAの長さで割っておく。
+                L1_ss_sum = torch.sum(torch.sum(BCEloss(sigmoid(yy[:,:,6:]), x[:,:,6:]), dim=2), dim=1)/(G_DIM * L)  # logなので、確率の掛け算はsumになる。行列の要素数で割っておく。
+                L1_sum = L1_nuc_sum + L1_ss_sum
+                L1 = torch.mean(L1_sum)
+
+                #tmp_L1_nuc = CEloss_mean(torch.transpose(yy[:,:,:6],1,2), torch.transpose(x[:,:,:6],1,2)) # 単にmeanを撮るのと同じになる、
+                #tmp_L1_ss = BCEloss_mean(sigmoid(yy[:,:,6:]), x[:,:,6:]) # 単にmeanを撮るのと同じになる、
+                #tmp_L1 = tmp_L1_nuc + tmp_L1_ss
+                #print(L1, tmp_L1)
+                
             L2 = - 1/2 * torch.mean(torch.sum(1 + torch.log(var) - mean**2 - var, dim = 1))
             loss_vae = L1 + args.beta * L2
             

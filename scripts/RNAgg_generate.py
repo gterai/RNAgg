@@ -4,14 +4,14 @@ import argparse
 sys.path.append(os.environ['HOME'] + "/pyscript")
 #sys.path.append("Users/terai/RNAVAE")
 #import basic
-#import pickle
+import pickle
 #import copy
 import numpy as np
-import pandas as pd
-import seaborn as sns
+#import pandas as pd
+#import seaborn as sns
 import matplotlib.pyplot as plt
 import RNAgg_VAE
-import utils
+import utils_gg as utils
 #import SS2shape3
 #import graphviz
 from torch.utils.data import DataLoader
@@ -51,7 +51,7 @@ def main(args: dict):
     
     # モデルの初期化とロード
     #checkpoint = torch.load(args.model, weights_only=True)
-    checkpoint = torch.load(args.model)
+    checkpoint = torch.load(args.model, map_location=torch.device(device))
     #d_rep, max_len = checkpoint['d_rep'], checkpoint['max_len']
     d_rep, max_len, model_type, nuc_only = checkpoint['d_rep'], checkpoint['max_len'], checkpoint['type'], checkpoint['nuc_only']
     print(f"model type:", model_type, file=sys.stderr)
@@ -72,11 +72,16 @@ def main(args: dict):
     model.to(device)
     model.eval()
     
-    mean = torch.normal(mean=0, std=1, size=(args.n, d_rep))
-    mean = mean.to(device)
-    
-    s_z = mean.shape
-    y = model.decoder(mean)
+    if args.from_emb: # embeddingを直で入力する。
+        with open(args.n, "rb") as file:
+            z = pickle.load(file)
+            z = z.to(device)
+    else:
+        z = torch.normal(mean=0, std=1, size=(int(args.n), d_rep))
+        z = z.to(device)
+        
+    s_z = z.shape
+    y = model.decoder(z)
     
     Sigmoid = nn.Sigmoid()
     Softmax = nn.Softmax(dim=2)
@@ -512,7 +517,7 @@ class Dataset:
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('n', type=int, help='number of RNA to be produced')
+    parser.add_argument('n', help='number of RNA to be produced')
     parser.add_argument('model', help='trained VAE model')
     parser.add_argument('outfile', help='output file namel')
     parser.add_argument('--input', help='input data file')
@@ -522,6 +527,7 @@ if __name__ == '__main__':
     parser.add_argument('--out_fasta', action='store_true', help='output fasta file')
     #parser.add_argument('--nuc_only', action='store_true', help='nucleotide only training')
     parser.add_argument('--n_cpu', type=int, default=1, help='number of CPU to use')
+    parser.add_argument('--from_emb', action='store_true', help='input embedding directly')
     args = parser.parse_args()
 
     main(args)
