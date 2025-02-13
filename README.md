@@ -46,4 +46,8 @@ python python gg_draw_latent.py emb.pickle --color_fname ../example/sample_act.t
 If you want to color the latent vectors, specify the color using the --color_fname option.
 
 # File format
+The input file (sample_input.txt) has three columns separeted by a white space, where the first, second, and third column are identifier, RNA sequence and secondary structure, respectively (for example, see the sample_input.txt file).
+The format of output file is the same as the input file. The activity file has two columns separeted by a white space, where the first and second column are identifier and activity value, respectively.
 
+# Reference
+Terai G and Asai K. Deep generative model of RNAs based on variational autoencoder with context free grammar. submitted. 
