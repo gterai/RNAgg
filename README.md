@@ -27,7 +27,7 @@ This will output 10 generated RNA sequences and their secondary structure in the
 ```
 python RNAgg_train.py ../example/sample_input.txt --act_fname ../example/sample_act.txt
 ```
-This will output RNAgg_model.pth which contains the parameters of a trained VAE considering
+This will output model_RNAgg.pth which contains the parameters of a trained VAE considering
 RNA activity as well as sequence and structure.
 
 # Drawing latent space
