@@ -21,7 +21,7 @@ This will create the model_RNAgg.pth file which contains the parameters of a tra
 ```
 python RNAgg_generate.py 10 model_RNAgg.pth output.txt
 ```
-This will output 10 generated RNA sequences and their secondary structure in the output.txt file.
+This will output 10 generated RNA sequences and their secondary structures in the output.txt file.
 
 # Training considering RNA avtivity
 ```
