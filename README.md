@@ -12,7 +12,7 @@ You are ready to use RNAgg. If you want to use a GPU, you may need to install th
 
 # Training
 ```
-python RNAgg_train.py ../examples/sample_input.txt
+python RNAgg_train.py ../example/sample_input.txt
 ```
 This will create the model_RNAgg.pth file which contains the parameters of a trained VAE.
 
@@ -24,14 +24,14 @@ This will output 10 generated RNA sequences and their secondary structure in the
 
 # Training considering RNA avtivity
 ```
-python RNAgg_train.py ../examples/sample_input.txt --act_fname ../examples/sample_act.txt
+python RNAgg_train.py ../example/sample_input.txt --act_fname ../example/sample_act.txt
 ```
 This will output RNAgg_model.pth which contains the parameters of a trained VAE considering
 RNA activity as well as sequence and structure.
 
 # Drawing latent space
 ```
-python gg_get_embedding.py ../examples/sample_input.txt model_RNAgg.pth emb.pickle
+python gg_get_embedding.py ../example/sample_input.txt model_RNAgg.pth emb.pickle
 ```
 This will convert input data into 8-dimensional latent vectors and save it as the emb.pickle file.
 
