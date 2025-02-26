@@ -1,7 +1,7 @@
 # How to install
 RNAgg was tested in a Linux environment. It works with Python 3.10.2 (and CUDA 11.8 for GPU). If you use other Python versions, you may need to install the appropriate versions of the packages listed in requirements.txt.
- If you are using a different CUDA version, please install torch and torch-geometric according to the corresponding CUDA version.
- 
+ If you are using a different CUDA version, please install torch, torchaudio and torchvision according to the corresponding CUDA version.
+
 ```
 git clone https://github.com/gterai/RNAgg
 cd RNAgg
