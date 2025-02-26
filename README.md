@@ -37,12 +37,12 @@ python gg_get_embedding.py ../example/sample_input.txt model_RNAgg.pth emb.pickl
 This will convert input data into 8-dimensional latent vectors and save it as the emb.pickle file.
 
 ```
-python python gg_draw_latent.py emb.pickle
+python gg_draw_latent.py emb.pickle
 ```
 This will convert the latent vectors to 2 dimensionals vectors with the UMAP algorithm and output them as the latent.png file.
 
 ```
-python python gg_draw_latent.py emb.pickle --color_fname ../example/sample_act.txt
+python gg_draw_latent.py emb.pickle --color_fname ../example/sample_act.txt
 ```
 If you want to color the latent vectors, specify the color using the --color_fname option.
 
