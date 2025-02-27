@@ -1,14 +1,17 @@
 # How to install
-RNAgg was tested in a Linux environment running on an Intel64 (x86_64) architecture. It works with Python 3.10.2 (and CUDA 11.8 for GPU). 
+RNAgg has been tested in a Linux environment running on an Intel64 (x86_64) architecture. It is compatible with Python 3.10.2 and, for GPU acceleration, supports CUDA 11.8.
 
+## Installation Instructions
+To install RNAgg, please follow these steps:
 ```
-git clone https://github.com/gterai/RNAgg
-cd RNAgg
-pip install -r requirements.txt
-cd scripts
+git clone https://github.com/gterai/RNAgg # Clone the repository
+cd RNAgg  # Navigate to the RNAgg directory
+pip install -r requirements.txt  # Install the required dependencies
+cd scripts  # Navigate to the scripts directory
 ```
 
-If you use other environments, Python or CUDA versions, you may need to install the appropriate versions of the packages listed below.
+## Using Different Environments
+If you plan to use a different operating system, Python version, or CUDA version, you may need to install appropriate package versions that are compatible with your environment. Below is a list of key dependencies required for RNAgg:
 ```
 numpy
 torch
@@ -16,7 +19,7 @@ matplotlib
 joblib
 umap-learn
 ```
-
+We recommend ensuring that the versions of these libraries are compatible with your system configuration to avoid potential issues.
 
 # Training
 ```
