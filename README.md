@@ -1,5 +1,5 @@
 # How to install
-RNAgg has been tested in a Linux environment running on an Intel64 (x86_64) architecture. It is compatible with Python 3.10.2 and, for GPU acceleration, supports CUDA 11.8.
+RNAgg has been tested in a **Linux environment** running on an **Intel64 (x86_64)** architecture. It is compatible with **Python 3.10.2** and, for GPU acceleration, supports **CUDA 11.8**.
 
 ## Installation Instructions
 To install RNAgg, please follow these steps:
@@ -11,7 +11,7 @@ cd scripts  # Navigate to the scripts directory
 ```
 
 ## Using Different Environments
-If you plan to use a different operating system, Python version, or CUDA version, you may need to install appropriate package versions that are compatible with your environment. Below is a list of key dependencies required for RNAgg:
+If you plan to use **a different operating system, Python version, or CUDA version**, you may need to install appropriate package versions that are compatible with your environment. Below is a list of key dependencies required for RNAgg:
 ```
 numpy
 torch
