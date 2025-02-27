@@ -8,7 +8,7 @@ pip install -r requirements.txt
 cd scripts
 ```
 
-If you use other Python or CUDA versions, you may need to install the appropriate versions of the packages listed below.
+If you use other environments, Python or CUDA versions, you may need to install the appropriate versions of the packages listed below.
 ```
 numpy
 torch
@@ -16,7 +16,7 @@ matplotlib
 joblib
 umap-learn
 ```
-Please install these packages one by one.
+
 
 # Training
 ```
