@@ -16,8 +16,7 @@ matplotlib
 joblib
 umap-learn
 ```
-
-You are ready to use RNAgg.
+Please install these packages one by one.
 
 # Training
 ```
