@@ -1,0 +1,7 @@
+# First you need to download Rfam.seed sequence from Rfam website.
+
+# The following command creates a stockhold format file of RF00001 family.
+python _makeRfamSeedSto.py RF00001 Rfam.seed > RF00001.stk
+
+# The following command creates unaligned and aligned training data.
+python _make_input_consG4.py RF00001.stk RF00001_unaligned.txt RF00001_aligned.txt

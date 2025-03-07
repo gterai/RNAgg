@@ -1,0 +1,14 @@
+# First you need to download FitnessData.txt from the articles github website.
+(https://github.com/lichuan199010/tRNA_Science)
+
+# We create a fasta file of the sequence.
+python 010makeFasta.py FitnessData.txt > allseq.fa
+
+# We run mxfold2 to obtain predicted secondary structures.
+mxfold2 predict seq.fa > ss_mxfold2.txt
+
+# We create the input data of tRNAs.
+python 020makeInput.py ss_mxfold2.txt > input_tRNA.txt
+
+# We create a file containing normalized activity values.
+python 030makeNormAct.py ../tRNA_Science/FitnessData.txt > act_norm_tRNA.txt

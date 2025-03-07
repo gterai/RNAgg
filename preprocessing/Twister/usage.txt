@@ -1,0 +1,14 @@
+# First you need to download Kobori_ACIE_2016_Supporting_Data.xlsx from prof. Kobori's website.
+(https://yokobayashilab.net/data.html)
+
+# We create the corresponding table of sequence and activity.
+python 010makeTwisterSeqAct.py Kobori_ACIE_2016_Supporting_Data.xlsx > twister_act_raw.txt
+
+# We create a file containing normalized activity values and a fasta file of the sequences
+python 020makeSeqActNorm.py twister_act_raw.txt seq.fa act_twister_norm.txt
+
+# We run mxfold2 to obtain predicted secondary structures.
+mxfold2 predict seq.fa > ss_mxfold2.txt
+
+# We create the input data of Twister ribozymes.
+python 030makeInput.py ss_mxfold2.txt act_twister_norm.txt > input_twister.txt

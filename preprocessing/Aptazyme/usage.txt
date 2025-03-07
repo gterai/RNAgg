@@ -1,0 +1,17 @@
+# First you need to download sb7b00057_si_002.xlsx from the supporing information of Kobori et al.
+(https://pubs.acs.org/doi/full/10.1021/acssynbio.7b00057).
+
+# We creates the corresponding table of 7mer and activity.
+python 010extractActivity.py sb7b00057_si_002.xlsx > act_apta_raw.txt
+
+# We normalizes activity value.
+python 015normAct.py act_apta_raw.txt > act_apta_norm.txt
+
+# We creates fasta file of aptazyme.
+python 020makeSeqData.py act_apta_norm.txt > seq.fa
+
+# We fun mxfold2 to obtain predicted secondary structures.
+mxfold2 predict seq.fa > ss_mxfold2.txt
+
+# We create the input data of Aptazyme.
+python 030makeInput.py ss_mxfold2.txt act_apta_norm.txt > input_apta.txt
